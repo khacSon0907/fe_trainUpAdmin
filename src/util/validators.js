@@ -1,0 +1,51 @@
+import * as yup from "yup";
+
+// ✅ Regex chung
+export const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export const phoneRegex = /^(?:\+84|0)\d{9,10}$/;
+
+// ✅ Họ và tên: chỉ cho phép chữ cái và khoảng trắng (VD: "Nguyễn Khắc Sơn", "Lệ Thị Hiền Trang")
+export const usernameRegex = /^[A-Za-zÀ-ỹ\s]+$/;
+
+// ✅ Mật khẩu: ít nhất 8 ký tự, chứa ít nhất 1 ký tự đặc biệt
+export const passwordRegex = /^(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
+// ✅ Schema Đăng ký
+export const signUpSchema = yup.object().shape({
+  username: yup
+    .string()
+    .required("⚠️ Vui lòng nhập họ và tên")
+    .matches(usernameRegex, "⚠️ Họ và tên không được chứa số hoặc ký tự đặc biệt")
+    .max(50, "⚠️ Họ và tên không được quá 50 ký tự")
+    .min(5, "⚠️ Họ và tên phải có ít nhất 5 ký tự"),
+
+  email: yup
+    .string()
+    .required("⚠️ Vui lòng nhập email")
+    .matches(emailRegex, "⚠️ Email không hợp lệ"),
+
+  phone: yup
+    .string()
+    .required("⚠️ Vui lòng nhập số điện thoại")
+    .matches(phoneRegex, "⚠️ Số điện thoại không hợp lệ"),
+
+  password: yup
+    .string()
+    .required("⚠️ Vui lòng nhập mật khẩu")
+    .matches(
+      passwordRegex,
+      "⚠️ Mật khẩu phải có ít nhất 8 ký tự và chứa ít nhất 1 ký tự đặc biệt"
+    ),
+});
+
+// ✅ Schema Đăng nhập
+export const signInSchema = yup.object().shape({
+  email: yup
+    .string()
+    .email("❌ Email không đúng định dạng!")
+    .required("❌ Email không được bỏ trống!"),
+
+  password: yup
+    .string()
+    .required("❌ Mật khẩu không được bỏ trống!")
+});
