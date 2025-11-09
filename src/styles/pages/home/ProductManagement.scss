@@ -1,0 +1,129 @@
+.product-manager-container {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f6f8fa;
+  color: #24292f;
+  padding: 20px;
+
+  .title {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .product-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+
+    .product-card {
+      background: #ffffff;
+      border: 1px solid #d0d7de;
+      border-radius: 6px;
+      padding: 15px;
+
+      .product-header {
+        h2 {
+          margin: 0;
+          font-size: 1.4rem;
+        }
+        .brand {
+          font-weight: 600;
+          color: #57606a;
+        }
+        .description {
+          font-size: 0.9rem;
+          color: #57606a;
+        }
+      }
+
+      .sizes {
+        margin-top: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+
+        .size-card {
+          border: 1px solid #d0d7de;
+          border-radius: 6px;
+          background: #f6f8fa;
+
+          .size-header {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            cursor: pointer;
+            gap: 15px;
+
+            &:hover {
+              background-color: #e1e4e8;
+            }
+
+            .size-img {
+              width: 80px;
+              height: 80px;
+              object-fit: contain;
+              border-radius: 4px;
+            }
+
+            .size-info {
+              flex: 1;
+              font-size: 0.9rem;
+            }
+
+            .expand-icon {
+              font-size: 1.2rem;
+              font-weight: bold;
+            }
+          }
+
+          .size-details {
+            padding: 10px 15px;
+            border-top: 1px solid #d0d7de;
+
+            .flavors {
+              margin-bottom: 10px;
+
+              ul {
+                list-style: none;
+                padding-left: 0;
+
+                li {
+                  margin-bottom: 4px;
+                }
+              }
+            }
+
+            .image-section {
+              .toggle-images-btn {
+                background: #2ea44f;
+                color: white;
+                border: none;
+                padding: 5px 10px;
+                border-radius: 4px;
+                cursor: pointer;
+                margin-bottom: 10px;
+
+                &:hover {
+                  background: #2c974b;
+                }
+              }
+
+              .image-gallery {
+                display: flex;
+                gap: 10px;
+                flex-wrap: wrap;
+
+                img {
+                  width: 100px;
+                  height: 100px;
+                  object-fit: cover;
+                  border-radius: 4px;
+                  border: 1px solid #d0d7de;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

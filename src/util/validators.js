@@ -49,3 +49,19 @@ export const signInSchema = yup.object().shape({
     .string()
     .required("❌ Mật khẩu không được bỏ trống!")
 });
+
+export const categorySchema = yup.object().shape({
+  name: yup
+    .string()
+    .required("⚠️ Vui lòng nhập tên danh mục")
+    .max(100, "⚠️ Tên danh mục không được quá 100 ký tự"),
+    
+  description: yup
+    .string()
+    .max(500, "⚠️ Mô tả không được quá 500 ký tự"),
+
+  active: yup
+    .boolean()
+    .required("⚠️ Vui lòng chọn trạng thái danh mục"),
+});
+

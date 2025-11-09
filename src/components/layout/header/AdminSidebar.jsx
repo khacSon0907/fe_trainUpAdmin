@@ -67,14 +67,14 @@ export default function AdminSidebar() {
   const menuItems = [
     { path: "/home", icon: <Home size={18} />, label: "Tổng quan" },
     {
-      label: "Sản phẩm",
+      label: "Sản Phẩm",
       icon: <Package size={18} />,
       submenu: [
-        { path: "/products", label: "Danh sách Sản phẩm" },
         { path: "/product-types", label: "Loại sản phẩm" },
+        { path: "/products", label: "Danh sách Sản phẩm" },
       ],
     },
-    { path: "/users", icon: <Users size={18} />, label: "Người dùng" },
+    { path: "/users", icon: <Users size={18} />, label: "Quản Lý Người dùng" },
     { path: "/stats", icon: <BarChart size={18} />, label: "Thống kê" },
   ];
 

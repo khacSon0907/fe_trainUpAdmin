@@ -1,5 +1,5 @@
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 export const ERROR_CODES = {
   EMAIL_EXISTS: "USR.EMAIL_EXISTS",           
@@ -15,5 +15,9 @@ export const ERROR_CODES = {
   USER_NOT_FOUND: "USR.NOT_FOUND",
   ACCOUNT_NOT_VERIFIED: "USR.ACCOUNT_NOT_VERIFIED",
   USER_INACTIVE: "USR.USER_INACTIVE",
+
+  CATEGORY_NAME_REQUIRED: "CATEGORY.NAME_REQUIRED",
+  CATEGORY_ALREADY_EXISTS: "CATEGORY.ALREADY_EXISTS",
+  CATEGORY_NOT_FOUND: "CATEGORY.NOT_FOUND", 
 };
 
