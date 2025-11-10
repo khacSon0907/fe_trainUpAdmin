@@ -2,9 +2,9 @@
 import React, { useState, useMemo } from "react";
 import { Search, ChevronDown, ChevronRight, Edit, Trash2, Eye, Package, TrendingUp } from "lucide-react";
 import "../../styles/pages/home/ProductManagement.scss";
-
-export default function ProductManagement() {
-  const products = [
+import { useNavigate } from "react-router-dom";
+import { Navigate } from 'react-router-dom';
+const products = [
     {
       id: 1,
       name: "Whey ISO HD",
@@ -103,7 +103,8 @@ export default function ProductManagement() {
       ],
     },
   ];
-
+export default function ProductManagement() {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBrand, setSelectedBrand] = useState("all");
   const [expandedRows, setExpandedRows] = useState({});
@@ -181,6 +182,10 @@ export default function ProductManagement() {
     return Math.min(...product.sizes.map(s => s.discountPrice));
   };
 
+  const handleAddProduct = () => {
+    navigate('/add-product');
+  }
+
   return (
     <div className="product-management">
       <div className="product-management__container">
@@ -193,6 +198,15 @@ export default function ProductManagement() {
           <p className="product-management__subtitle">
             Quản lý {filteredProducts.length} sản phẩm
           </p>
+
+          ...{/* Add Product Button */}
+          <div className="product-management__actions">
+            <button className="add-product-btn"
+              onClick={handleAddProduct}
+            >
+              + Thêm sản phẩm
+            </button>
+          </div>
         </div>
 
         {/* Filters */}

@@ -94,6 +94,29 @@ $transition-fast: all 0.2s ease;
     opacity: 0.9;
   }
 
+  &__actions {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: flex-end;
+    .add-product-btn {
+      padding: 0.75rem 1.5rem;
+      background: $success-color;
+      color: white;
+      border: none;
+      border-radius: $border-radius;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: $transition-fast;
+
+      &:hover {
+        background: darken($success-color, 5%);
+        transform: translateY(-2px);
+      }
+    }
+
+  } 
+
   &__filters {
     padding: 1.5rem;
     border-bottom: 1px solid $border-color;
