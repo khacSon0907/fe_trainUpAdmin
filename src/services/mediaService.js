@@ -1,7 +1,6 @@
 import axiosClient from "../config/axios/axiosClient";
-import axios from "axios"; // 💡 Cần import axios thường cho việc upload S3
+import axios from "axios"; 
 
-// Endpoint cho Media Service
 const MEDIA_ENDPOINT = "/v1/media";
 
 const mediaService = {
