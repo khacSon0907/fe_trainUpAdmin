@@ -48,26 +48,42 @@ const CategoryManagement = () => {
     fetchCategories();
   }, []);
 
-  // 🔍 Tìm kiếm
+  // 🔍 Tìm kiếm với trim
   const handleSearch = async (e) => {
     const value = e.target.value;
-    setSearchTerm(value);
+    setSearchTerm(value); // Hiển thị giá trị gốc (có khoảng trắng)
 
-    if (!value.trim()) {
+    const trimmedValue = value.trim();
+    
+    if (!trimmedValue) {
       setFiltered(categories);
       return;
     }
 
     try {
-      const res = await categoryService.search(value);
+      const res = await categoryService.search(trimmedValue);
       setFiltered(res.data?.data || []);
     } catch (err) {
       console.error("Lỗi tìm kiếm:", err);
     }
   };
 
-  // 💾 Submit form (tạo hoặc cập nhật)
+  //  Submit form (tạo hoặc cập nhật)
   const onSubmit = async (data) => {
+    // ✅ Kiểm tra trùng lặp tên không phân biệt hoa/thường
+    const normalizedName = data.name.trim().toLowerCase();
+    const isDuplicate = categories.some(cat => {
+      // Bỏ qua danh mục đang edit
+      if (editingId && cat.id === editingId) return false;
+      return cat.name.trim().toLowerCase() === normalizedName;
+    });
+
+    if (isDuplicate) {
+      setServerMessage("⚠️ Tên danh mục đã tồn tại!");
+      setErrorModal(true);
+      return;
+    }
+
     try {
       if (editingId) {
         await categoryService.update(editingId, data);
@@ -86,13 +102,13 @@ const CategoryManagement = () => {
 
       switch (errCode) {
         case ERROR_CODES.CATEGORY_ALREADY_EXISTS:
-          setServerMessage("❌ Danh mục này đã tồn tại!");
+          setServerMessage("Danh mục này đã tồn tại!");
           break;
         case ERROR_CODES.CATEGORY_NAME_REQUIRED:
           setServerMessage("⚠️ Tên danh mục không được để trống!");
           break;
         default:
-          setServerMessage("Không thể lưu danh mục. Vui lòng thử lại!");
+          setServerMessage("Tên danh mục phải có ít nhất 3 ký tự!");
           break;
       }
       setErrorModal(true);
@@ -303,7 +319,7 @@ const CategoryManagement = () => {
         centered
       >
         <div style={{ textAlign: "center" }}>
-          <h2>⚠️ Lỗi thao tác danh mục</h2>
+          <h2>❌ Không thể lưu vào danh mục</h2>
           <p>{serverMessage}</p>
         </div>
       </Modal>

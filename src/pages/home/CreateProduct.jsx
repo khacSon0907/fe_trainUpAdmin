@@ -41,6 +41,34 @@ export default function CreateProduct() {
   const [expandedSizes, setExpandedSizes] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  
+  // Validation errors - inline cho từng field
+  const [fieldErrors, setFieldErrors] = useState({
+    name: "",
+    description: "",
+    brand: "",
+    categoryId: "",
+    sizes: {} // { 0: { size: "", weight: "", price: "", discountPrice: "", imageUrl: "", flavors: "" } }
+  });
+  
+  // Modal message - hiển thị giữa màn hình
+  const [modalMessage, setModalMessage] = useState({
+    show: false,
+    type: "", // "success" | "error" | "warning"
+    title: "",
+    message: ""
+  });
+
+  // Debug: Log khi modalMessage thay đổi
+  useEffect(() => {
+    console.log("🔔 Modal state changed:", modalMessage);
+    if (modalMessage.show) {
+      console.log("✅ Modal SHOULD BE VISIBLE NOW!");
+      console.log("   - Type:", modalMessage.type);
+      console.log("   - Title:", modalMessage.title);
+      console.log("   - Message:", modalMessage.message);
+    }
+  }, [modalMessage]);
 
   // Track actual file objects for upload
   const [mainImageFiles, setMainImageFiles] = useState({});
@@ -147,7 +175,12 @@ export default function CreateProduct() {
       const remainingSlots = 4 - currentGallery.length;
 
       if (remainingSlots <= 0) {
-        alert("Đã đạt tối đa 4 ảnh phụ!");
+        setModalMessage({
+          show: true,
+          type: "warning",
+          title: "Giới hạn ảnh",
+          message: "Đã đạt tối đa 4 ảnh phụ cho biến thể này!"
+        });
         return;
       }
 
@@ -256,25 +289,188 @@ export default function CreateProduct() {
     }
   };
 
+  // ===== VALIDATION FUNCTIONS =====
+  const validateForm = () => {
+    const newFieldErrors = {
+      name: "",
+      description: "",
+      brand: "",
+      categoryId: "",
+      sizes: {}
+    };
+    
+    let hasError = false;
+
+    // Validate tên sản phẩm (theo backend: 3-255 ký tự)
+    if (!product.name?.trim()) {
+      newFieldErrors.name = "Tên sản phẩm không được để trống";
+      hasError = true;
+    } else if (product.name.trim().length < 3) {
+      newFieldErrors.name = "Tên sản phẩm phải từ 3-255 ký tự";
+      hasError = true;
+    } else if (product.name.trim().length > 255) {
+      newFieldErrors.name = "Tên sản phẩm phải từ 3-255 ký tự";
+      hasError = true;
+    }
+
+    // Validate mô tả (theo backend: 10-5000 ký tự)
+    if (!product.description?.trim()) {
+      newFieldErrors.description = "Mô tả sản phẩm không được để trống";
+      hasError = true;
+    } else if (product.description.trim().length < 10) {
+      newFieldErrors.description = "Mô tả phải từ 10-5000 ký tự";
+      hasError = true;
+    } else if (product.description.trim().length > 5000) {
+      newFieldErrors.description = "Mô tả phải từ 10-5000 ký tự";
+      hasError = true;
+    }
+
+    // Validate thương hiệu (theo backend: 2-100 ký tự)
+    if (!product.brand?.trim()) {
+      newFieldErrors.brand = "Thương hiệu không được để trống";
+      hasError = true;
+    } else if (product.brand.trim().length < 2) {
+      newFieldErrors.brand = "Thương hiệu phải từ 2-100 ký tự";
+      hasError = true;
+    } else if (product.brand.trim().length > 100) {
+      newFieldErrors.brand = "Thương hiệu phải từ 2-100 ký tự";
+      hasError = true;
+    }
+
+    // Validate danh mục
+    if (!product.categoryId) {
+      newFieldErrors.categoryId = "Vui lòng chọn danh mục";
+      hasError = true;
+    }
+
+    // Validate số lượng biến thể (theo backend: ít nhất 1, tối đa 20)
+    if (product.sizes.length === 0) {
+      setModalMessage({
+        show: true,
+        type: "warning",
+        title: "Thiếu biến thể sản phẩm",
+        message: "Sản phẩm phải có ít nhất 1 biến thể!"
+      });
+      hasError = true;
+    } else if (product.sizes.length > 20) {
+      setModalMessage({
+        show: true,
+        type: "warning",
+        title: "Quá nhiều biến thể",
+        message: "Tối đa 20 biến thể cho mỗi sản phẩm!"
+      });
+      hasError = true;
+    }
+
+    // Validate từng biến thể
+    product.sizes.forEach((size, index) => {
+      const sizeErrors = {
+        size: "",
+        weight: "",
+        price: "",
+        discountPrice: "",
+        imageUrl: "",
+        flavors: ""
+      };
+
+      // Kiểm tra kích thước (định dạng: số + serving/servings)
+      if (!size.size?.trim()) {
+        sizeErrors.size = "Vui lòng nhập kích thước";
+        hasError = true;
+      } else {
+        // Validate format: số + serving hoặc servings (vd: 1 serving, 2 servings)
+        const sizePattern = /^\d+(\.\d+)?\s*(serving|servings)$/i;
+        if (!sizePattern.test(size.size.trim())) {
+          sizeErrors.size = "Size phải theo định dạng hợp lệ (vd: 1 serving, 2 servings)";
+          hasError = true;
+        }
+      }
+
+      // Kiểm tra trọng lượng (bắt buộc, định dạng: số + kg)
+      if (!size.weight?.trim()) {
+        sizeErrors.weight = "Vui lòng nhập trọng lượng";
+        hasError = true;
+      } else {
+        const weightPattern = /^\d+(\.\d+)?\s*kg$/i;
+        if (!weightPattern.test(size.weight.trim())) {
+          sizeErrors.weight = "Trọng lượng phải theo định dạng hợp lệ (vd: 4.5kg)";
+          hasError = true;
+        }
+      }
+
+      // Kiểm tra giá gốc (phải > 0)
+      if (!size.price) {
+        sizeErrors.price = "Vui lòng nhập giá gốc";
+        hasError = true;
+      } else if (parseFloat(size.price) <= 0) {
+        sizeErrors.price = "Giá gốc phải lớn hơn 0";
+        hasError = true;
+      }
+
+      // Kiểm tra giá khuyến mãi (nếu có, phải > 0 và < giá gốc)
+      if (size.discountPrice) {
+        if (parseFloat(size.discountPrice) <= 0) {
+          sizeErrors.discountPrice = "Giá giảm phải lớn hơn 0";
+          hasError = true;
+        } else if (parseFloat(size.discountPrice) >= parseFloat(size.price)) {
+          sizeErrors.discountPrice = "Giá khuyến mãi phải nhỏ hơn giá gốc";
+          hasError = true;
+        }
+      }
+
+      // Kiểm tra ảnh chính
+      if (!previewMain[index] && !mainImageFiles[index]) {
+        sizeErrors.imageUrl = "Vui lòng chọn ảnh chính";
+        hasError = true;
+      }
+
+      // Kiểm tra hương vị
+      if (!size.flavors || size.flavors.length === 0) {
+        sizeErrors.flavors = "Vui lòng thêm ít nhất 1 hương vị";
+        hasError = true;
+      } else {
+        const emptyFlavors = size.flavors.filter(f => !f.flavor?.trim());
+        if (emptyFlavors.length > 0) {
+          sizeErrors.flavors = "Vui lòng nhập tên cho tất cả hương vị";
+          hasError = true;
+        }
+      }
+
+      newFieldErrors.sizes[index] = sizeErrors;
+    });
+
+    // Kiểm tra biến thể trùng lặp
+    const variantKeys = product.sizes.map(size => size.size?.trim().toLowerCase()).filter(Boolean);
+    const duplicates = variantKeys.filter((key, index) => variantKeys.indexOf(key) !== index);
+    
+    if (duplicates.length > 0) {
+      product.sizes.forEach((size, index) => {
+        if (duplicates.includes(size.size?.trim().toLowerCase())) {
+          if (!newFieldErrors.sizes[index]) newFieldErrors.sizes[index] = {};
+          newFieldErrors.sizes[index].size = "Kích thước này đã tồn tại";
+          hasError = true;
+        }
+      });
+    }
+
+    setFieldErrors(newFieldErrors);
+    return !hasError;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     // Prevent double submission
     if (isSubmitting) return;
 
+    // Validate form
+    if (!validateForm()) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     try {
-      // Validate basic fields
-      if (!product.name || !product.categoryId) {
-        alert("Vui lòng điền đầy đủ thông tin bắt buộc!");
-        return;
-      }
-
-      // Validate sizes
-      if (product.sizes.length === 0) {
-        alert("Vui lòng thêm ít nhất một biến thể sản phẩm!");
-        return;
-      }
-
+      setFieldErrors({ name: "", categoryId: "", sizes: {} }); // Reset errors
       setIsSubmitting(true);
       setUploadProgress(0);
 
@@ -374,34 +570,178 @@ export default function CreateProduct() {
         // UPDATE MODE
         console.log(`🔄 Updating product with ID: ${editProductId}`);
         response = await productService.updateProduct(editProductId, productData);
+        console.log("🔍 FULL UPDATE RESPONSE:", response);
+        console.log("🔍 response.data:", response.data);
+        console.log("🔍 response.status:", response.status);
         
-        if (response.data.code === 200) {
+        // Success - Kiểm tra cả status code HTTP và response.data.code
+        if (response.status === 200 || response.data?.code === 200) {
           console.log("✅ Product updated successfully:", response.data);
-          alert("Cập nhật sản phẩm thành công!");
-          navigate("/products");
+          const successModal = {
+            show: true,
+            type: "success",
+            title: "Thành công!",
+            message: "Cập nhật sản phẩm thành công!"
+          };
+          console.log("🔔 Setting modal state:", successModal);
+          setModalMessage(successModal);
         }
       } else {
         // CREATE MODE
         response = await productService.createProduct(productData);
+        console.log("🔍 FULL CREATE RESPONSE:", response);
+        console.log("🔍 response.data:", response.data);
+        console.log("🔍 response.status:", response.status);
         
-        if (response.data.code === 201) {
+        // Success - Kiểm tra cả status code HTTP và response.data.code
+        if (response.status === 201 || response.data?.code === 201 || response.status === 200) {
           console.log("✅ Product created successfully:", response.data);
-          alert("Tạo sản phẩm thành công!");
-          navigate("/products");
+          const successModal = {
+            show: true,
+            type: "success",
+            title: "Thành công!",
+            message: "Tạo sản phẩm thành công!"
+          };
+          console.log("🔔 Setting modal state:", successModal);
+          setModalMessage(successModal);
         }
       }
     } catch (error) {
       console.error(isEditMode ? "❌ Error updating product:" : "❌ Error creating product:", error);
 
       if (error.response) {
-        const errorMessage =
-          error.response.data?.message || 
-          (isEditMode ? "Có lỗi xảy ra khi cập nhật sản phẩm" : "Có lỗi xảy ra khi tạo sản phẩm");
-        alert(`Lỗi: ${errorMessage}`);
+        const errorData = error.response.data;
+        const statusCode = error.response.status;
+        
+        console.log("📋 Error Response:", errorData);
+        
+        // ===== XỬ LÝ LỖI VALIDATION (400) =====
+        if (statusCode === 400 && errorData?.detail) {
+          // Parse detail object: { "sizes[0].size": ["Size phải theo định dạng..."], ... }
+          const detail = errorData.detail;
+          const newFieldErrors = {
+            name: "",
+            description: "",
+            brand: "",
+            categoryId: "",
+            sizes: {}
+          };
+
+          let hasInlineError = false;
+
+          // Duyệt qua từng field lỗi
+          Object.keys(detail).forEach(fieldPath => {
+            const errorMessages = detail[fieldPath];
+            const errorText = Array.isArray(errorMessages) ? errorMessages[0] : errorMessages;
+
+            // Parse field path: "sizes[0].size" -> sizes, index 0, field size
+            if (fieldPath.startsWith('sizes[')) {
+              const match = fieldPath.match(/sizes\[(\d+)\]\.(.+)/);
+              if (match) {
+                const index = parseInt(match[1]);
+                const field = match[2];
+                
+                if (!newFieldErrors.sizes[index]) {
+                  newFieldErrors.sizes[index] = {};
+                }
+                newFieldErrors.sizes[index][field] = errorText;
+                hasInlineError = true;
+              }
+            } else {
+              // Lỗi field cấp cao: name, description, brand, categoryId
+              newFieldErrors[fieldPath] = errorText;
+              hasInlineError = true;
+            }
+          });
+
+          if (hasInlineError) {
+            setFieldErrors(newFieldErrors);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            // Hiển thị modal tổng quan
+            const errorModal = {
+              show: true,
+              type: "error",
+              title: "Dữ liệu không hợp lệ",
+              message: errorData?.message || "Vui lòng kiểm tra lại các trường đã đánh dấu đỏ"
+            };
+            console.log("🔔 Setting error modal:", errorModal);
+            setModalMessage(errorModal);
+            return;
+          }
+        }
+
+        // ===== XỬ LÝ LỖI TRÙNG (409) =====
+        if (statusCode === 409) {
+          if (errorData?.message?.includes("tên") || errorData?.message?.includes("name")) {
+            // Set inline error
+            setFieldErrors(prev => ({
+              ...prev,
+              name: "Tên sản phẩm đã tồn tại trong hệ thống"
+            }));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            // Hiển thị modal giữa màn hình
+            const duplicateModal = {
+              show: true,
+              type: "error",
+              title: "Tên sản phẩm đã tồn tại!",
+              message: "Tên sản phẩm này đã có trong hệ thống. Vui lòng chọn tên khác."
+            };
+            console.log("🔔 Setting duplicate product modal:", duplicateModal);
+            setModalMessage(duplicateModal);
+            return;
+          }
+          
+          // Lỗi xung đột khác
+          const conflictModal = {
+            show: true,
+            type: "error",
+            title: "Xung đột dữ liệu",
+            message: errorData?.message || "Sản phẩm đã tồn tại hoặc có xung đột dữ liệu"
+          };
+          console.log("🔔 Setting conflict modal:", conflictModal);
+          setModalMessage(conflictModal);
+          return;
+        }
+
+        // ===== XỬ LÝ CÁC LỖI KHÁC =====
+        let errorMessage = "Có lỗi xảy ra";
+        
+        if (statusCode === 404) {
+          errorMessage = "Không tìm thấy tài nguyên";
+        } else if (statusCode === 500) {
+          errorMessage = "Lỗi server: " + (errorData?.message || "Vui lòng thử lại sau");
+        } else {
+          errorMessage = errorData?.message || ("Có lỗi xảy ra khi " + (isEditMode ? "cập nhật" : "tạo") + " sản phẩm");
+        }
+
+        const generalErrorModal = {
+          show: true,
+          type: "error",
+          title: "Lỗi!",
+          message: errorMessage
+        };
+        console.log("🔔 Setting general error modal:", generalErrorModal);
+        setModalMessage(generalErrorModal);
       } else if (error.request) {
-        alert("Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng!");
+        const networkErrorModal = {
+          show: true,
+          type: "error",
+          title: "Lỗi kết nối",
+          message: "Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng."
+        };
+        console.log("🔔 Setting network error modal:", networkErrorModal);
+        setModalMessage(networkErrorModal);
       } else {
-        alert("Có lỗi xảy ra: " + error.message);
+        const unknownErrorModal = {
+          show: true,
+          type: "error",
+          title: "Lỗi!",
+          message: error.message
+        };
+        console.log("🔔 Setting unknown error modal:", unknownErrorModal);
+        setModalMessage(unknownErrorModal);
       }
     } finally {
       setIsSubmitting(false);
@@ -411,6 +751,40 @@ export default function CreateProduct() {
 
   return (
     <div className="create-product-container">
+      {/* Modal Message - Render ở cấp cao nhất để position:fixed hoạt động */}
+      {modalMessage.show && (
+        <div className="modal-overlay" onClick={(e) => {
+          // Không cho đóng modal khi click overlay nếu đang thành công
+          if (modalMessage.type !== "success") {
+            setModalMessage({ ...modalMessage, show: false });
+          }
+        }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className={`modal-icon ${modalMessage.type}`}>
+              {modalMessage.type === "success" && <Check size={48} />}
+              {modalMessage.type === "error" && <X size={48} />}
+              {modalMessage.type === "warning" && <AlertCircle size={48} />}
+            </div>
+            <h2>{modalMessage.title}</h2>
+            <p>{modalMessage.message}</p>
+            <button 
+              className="btn-close-modal"
+              onClick={() => {
+                if (modalMessage.type === "success") {
+                  // Thành công → Redirect về /products
+                  navigate("/products");
+                } else {
+                  // Thất bại/Warning → Đóng modal, ở lại trang
+                  setModalMessage({ ...modalMessage, show: false });
+                }
+              }}
+            >
+              {modalMessage.type === "success" ? "OK" : "Đóng"}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header với gradient */}
       <div className="page-header-section">
         <div className="container">
@@ -445,6 +819,7 @@ export default function CreateProduct() {
 
       <div className="container">
         <form onSubmit={handleSubmit} className="product-form">
+
           {/* Progress Steps */}
           <div className="progress-steps">
             <div className={`step ${product.name ? "completed" : "active"}`}>
@@ -498,46 +873,69 @@ export default function CreateProduct() {
                       type="text"
                       placeholder="Nhập tên sản phẩm..."
                       value={product.name}
-                      onChange={(e) =>
-                        setProduct({ ...product, name: e.target.value })
-                      }
-                      required
-                      className="input-field"
+                      onChange={(e) => {
+                        setProduct({ ...product, name: e.target.value });
+                        if (fieldErrors.name) {
+                          setFieldErrors({ ...fieldErrors, name: "" });
+                        }
+                      }}
+                      className={`input-field ${fieldErrors.name ? 'error' : ''}`}
                     />
+                    {fieldErrors.name && (
+                      <span className="error-message">
+                        <AlertCircle size={14} /> {fieldErrors.name}
+                      </span>
+                    )}
                   </div>
                 </div>
 
                 <div className="form-group">
-                  <label>Thương hiệu</label>
+                  <label>Thương hiệu <span className="required">*</span></label>
                   <div className="input-wrapper">
                     <input
                       type="text"
-                      placeholder="Nhập thương hiệu..."
+                      placeholder="Nhập thương hiệu (2-100 ký tự)..."
                       value={product.brand}
-                      onChange={(e) =>
-                        setProduct({ ...product, brand: e.target.value })
-                      }
-                      className="input-field"
+                      onChange={(e) => {
+                        setProduct({ ...product, brand: e.target.value });
+                        if (fieldErrors.brand) {
+                          setFieldErrors({ ...fieldErrors, brand: "" });
+                        }
+                      }}
+                      className={`input-field ${fieldErrors.brand ? 'error' : ''}`}
                     />
+                    {fieldErrors.brand && (
+                      <span className="error-message">
+                        <AlertCircle size={14} /> {fieldErrors.brand}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
 
               <div className="form-group">
-                <label>Mô tả sản phẩm</label>
+                <label>Mô tả sản phẩm <span className="required">*</span></label>
                 <div className="textarea-wrapper">
                   <textarea
                     rows="4"
-                    placeholder="Mô tả chi tiết về sản phẩm, tính năng nổi bật..."
+                    placeholder="Mô tả chi tiết về sản phẩm, tính năng nổi bật (10-5000 ký tự)..."
                     value={product.description}
-                    onChange={(e) =>
-                      setProduct({ ...product, description: e.target.value })
-                    }
-                    className="textarea-field"
+                    onChange={(e) => {
+                      setProduct({ ...product, description: e.target.value });
+                      if (fieldErrors.description) {
+                        setFieldErrors({ ...fieldErrors, description: "" });
+                      }
+                    }}
+                    className={`textarea-field ${fieldErrors.description ? 'error' : ''}`}
                   ></textarea>
                   <div className="char-count">
                     {product.description.length} ký tự
                   </div>
+                  {fieldErrors.description && (
+                    <span className="error-message">
+                      <AlertCircle size={14} /> {fieldErrors.description}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -548,11 +946,13 @@ export default function CreateProduct() {
                 <div className="select-wrapper">
                   <select
                     value={product.categoryId}
-                    onChange={(e) =>
-                      setProduct({ ...product, categoryId: e.target.value })
-                    }
-                    required
-                    className="select-field"
+                    onChange={(e) => {
+                      setProduct({ ...product, categoryId: e.target.value });
+                      if (fieldErrors.categoryId) {
+                        setFieldErrors({ ...fieldErrors, categoryId: "" });
+                      }
+                    }}
+                    className={`select-field ${fieldErrors.categoryId ? 'error' : ''}`}
                   >
                     <option value="">Chọn danh mục sản phẩm</option>
                     {categories.map((category) => (
@@ -561,6 +961,11 @@ export default function CreateProduct() {
                       </option>
                     ))}
                   </select>
+                  {fieldErrors.categoryId && (
+                    <span className="error-message">
+                      <AlertCircle size={14} /> {fieldErrors.categoryId}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -679,46 +1084,78 @@ export default function CreateProduct() {
                             </h5>
                             <div className="form-grid">
                               <div className="form-group">
-                                <label>Kích thước</label>
+                                <label>Kích thước <span className="required">*</span></label>
                                 <input
                                   type="text"
-                                  placeholder="VD: M, L, XL, 500g..."
+                                  placeholder="VD: 1 serving, 2 servings..."
                                   value={size.size}
-                                  onChange={(e) =>
-                                    handleSizeChange(i, "size", e.target.value)
-                                  }
-                                  className="input-field"
+                                  onChange={(e) => {
+                                    handleSizeChange(i, "size", e.target.value);
+                                    if (fieldErrors.sizes[i]?.size) {
+                                      const newSizeErrors = { ...fieldErrors.sizes };
+                                      newSizeErrors[i].size = "";
+                                      setFieldErrors({ ...fieldErrors, sizes: newSizeErrors });
+                                    }
+                                  }}
+                                  className={`input-field ${fieldErrors.sizes[i]?.size ? 'error' : ''}`}
                                 />
+                                {fieldErrors.sizes[i]?.size && (
+                                  <span className="error-message">
+                                    <AlertCircle size={14} /> {fieldErrors.sizes[i].size}
+                                  </span>
+                                )}
                               </div>
 
                               <div className="form-group">
-                                <label>Trọng lượng</label>
+                                <label>Trọng lượng <span className="required">*</span></label>
                                 <input
                                   type="text"
-                                  placeholder="VD: 500g, 1kg, 2.5kg..."
+                                  placeholder="VD: 4.5kg, 10kg..."
                                   value={size.weight}
-                                  onChange={(e) =>
-                                    handleSizeChange(i, "weight", e.target.value)
-                                  }
-                                  className="input-field"
+                                  onChange={(e) => {
+                                    handleSizeChange(i, "weight", e.target.value);
+                                    if (fieldErrors.sizes[i]?.weight) {
+                                      const newSizeErrors = { ...fieldErrors.sizes };
+                                      newSizeErrors[i].weight = "";
+                                      setFieldErrors({ ...fieldErrors, sizes: newSizeErrors });
+                                    }
+                                  }}
+                                  className={`input-field ${fieldErrors.sizes[i]?.weight ? 'error' : ''}`}
                                 />
+                                {fieldErrors.sizes[i]?.weight && (
+                                  <span className="error-message">
+                                    <AlertCircle size={14} /> {fieldErrors.sizes[i].weight}
+                                  </span>
+                                )}
                               </div>
 
                               <div className="form-group">
-                                <label>Giá gốc</label>
+                                <label>Giá gốc <span className="required">*</span></label>
                                 <div className="input-with-icon">
                                   <DollarSign size={16} className="input-icon" />
                                   <input
                                     type="number"
                                     placeholder="0"
                                     value={size.price}
-                                    onChange={(e) =>
-                                      handleSizeChange(i, "price", e.target.value)
-                                    }
-                                    className="input-field"
+                                    onChange={(e) => {
+                                      handleSizeChange(i, "price", e.target.value);
+                                      if (fieldErrors.sizes[i]?.price) {
+                                        const newSizeErrors = { ...fieldErrors.sizes };
+                                        newSizeErrors[i].price = "";
+                                        setFieldErrors({ ...fieldErrors, sizes: newSizeErrors });
+                                      }
+                                    }}
+                                    min="0"
+                                    step="0.01"
+                                    className={`input-field ${fieldErrors.sizes[i]?.price ? 'error' : ''}`}
                                   />
                                   <span className="input-suffix">đ</span>
                                 </div>
+                                {fieldErrors.sizes[i]?.price && (
+                                  <span className="error-message">
+                                    <AlertCircle size={14} /> {fieldErrors.sizes[i].price}
+                                  </span>
+                                )}
                               </div>
 
                               <div className="form-group">
@@ -729,17 +1166,25 @@ export default function CreateProduct() {
                                     type="number"
                                     placeholder="0"
                                     value={size.discountPrice}
-                                    onChange={(e) =>
-                                      handleSizeChange(
-                                        i,
-                                        "discountPrice",
-                                        e.target.value
-                                      )
-                                    }
-                                    className="input-field"
+                                    onChange={(e) => {
+                                      handleSizeChange(i, "discountPrice", e.target.value);
+                                      if (fieldErrors.sizes[i]?.discountPrice) {
+                                        const newSizeErrors = { ...fieldErrors.sizes };
+                                        newSizeErrors[i].discountPrice = "";
+                                        setFieldErrors({ ...fieldErrors, sizes: newSizeErrors });
+                                      }
+                                    }}
+                                    min="0"
+                                    step="0.01"
+                                    className={`input-field ${fieldErrors.sizes[i]?.discountPrice ? 'error' : ''}`}
                                   />
                                   <span className="input-suffix">đ</span>
                                 </div>
+                                {fieldErrors.sizes[i]?.discountPrice && (
+                                  <span className="error-message">
+                                    <AlertCircle size={14} /> {fieldErrors.sizes[i].discountPrice}
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -755,15 +1200,20 @@ export default function CreateProduct() {
                               {/* Main Image */}
                               <div className="main-image-section">
                                 <label className="image-section-label">
-                                  Ảnh chính
+                                  Ảnh chính <span className="required">*</span>
                                 </label>
                                 <input
                                   type="file"
                                   id={`main-image-${i}`}
                                   accept="image/*"
-                                  onChange={(e) =>
-                                    handleImagePreview(i, e.target.files, "main")
-                                  }
+                                  onChange={(e) => {
+                                    handleImagePreview(i, e.target.files, "main");
+                                    if (fieldErrors.sizes[i]?.imageUrl) {
+                                      const newSizeErrors = { ...fieldErrors.sizes };
+                                      newSizeErrors[i].imageUrl = "";
+                                      setFieldErrors({ ...fieldErrors, sizes: newSizeErrors });
+                                    }
+                                  }}
                                   style={{ display: "none" }}
                                 />
                                 {previewMain[i] ? (
@@ -782,7 +1232,7 @@ export default function CreateProduct() {
                                 ) : (
                                   <label
                                     htmlFor={`main-image-${i}`}
-                                    className="upload-box"
+                                    className={`upload-box ${fieldErrors.sizes[i]?.imageUrl ? 'error' : ''}`}
                                   >
                                     <ImageIcon size={40} />
                                     <span className="upload-text">Tải ảnh chính</span>
@@ -790,6 +1240,11 @@ export default function CreateProduct() {
                                       JPG, PNG tối đa 5MB
                                     </small>
                                   </label>
+                                )}
+                                {fieldErrors.sizes[i]?.imageUrl && !previewMain[i] && (
+                                  <span className="error-message">
+                                    <AlertCircle size={14} /> {fieldErrors.sizes[i].imageUrl}
+                                  </span>
                                 )}
                               </div>
 
@@ -861,9 +1316,15 @@ export default function CreateProduct() {
                               <div className="empty-flavors">
                                 <Palette size={32} className="empty-icon-small" />
                                 <p>Chưa có hương vị nào</p>
+                                {fieldErrors.sizes[i]?.flavors && (
+                                  <span className="error-message">
+                                    <AlertCircle size={14} /> {fieldErrors.sizes[i].flavors}
+                                  </span>
+                                )}
                               </div>
                             ) : (
-                              <div className="flavors-grid">
+                              <>
+                                <div className="flavors-grid">
                                 {size.flavors.map((flavor, j) => (
                                   <div key={j} className="flavor-card">
                                     <div className="flavor-card-header">
@@ -881,7 +1342,7 @@ export default function CreateProduct() {
                                     </div>
                                     <div className="flavor-card-body">
                                       <div className="form-group">
-                                        <label>Tên hương vị</label>
+                                        <label>Tên hương vị <span className="required">*</span></label>
                                         <input
                                           type="text"
                                           placeholder="VD: Vani, Chocolate..."
@@ -954,6 +1415,12 @@ export default function CreateProduct() {
                                   </div>
                                 ))}
                               </div>
+                              {fieldErrors.sizes[i]?.flavors && size.flavors.length > 0 && (
+                                <span className="error-message">
+                                  <AlertCircle size={14} /> {fieldErrors.sizes[i].flavors}
+                                </span>
+                              )}
+                            </>
                             )}
                           </div>
                         </div>
